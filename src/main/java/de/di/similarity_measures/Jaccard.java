@@ -3,6 +3,7 @@ package de.di.similarity_measures;
 import de.di.similarity_measures.helper.Tokenizer;
 import lombok.AllArgsConstructor;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 @AllArgsConstructor
@@ -41,11 +42,13 @@ public class Jaccard implements SimilarityMeasure {
      * @return The multiset Jaccard similarity of the two arguments.
      */
     @Override
+
+
     public double calculate(String[] strings1, String[] strings2) {
         double jaccardSimilarity = 0;
         Set<String> set_string1, set_string2;
-        int union_size;
-        int intersection_size;
+        int union_size=0;
+        int intersection_size=0;
 
         if(!bagSemantics){ //it means we have set semantics
             set_string1=new HashSet<>(Arrays.asList(strings1)); //create set so that no duplicates are there
@@ -56,34 +59,68 @@ public class Jaccard implements SimilarityMeasure {
             union.addAll(set_string2);
             intersection_size=intersection.size();
             union_size=union.size();
+
         }
-        else{
-            List<String>intersection= new ArrayList<>();
+
+        else{ //bag semantics
+            List<String> intersection = new ArrayList<>();
             List<String> union = new ArrayList<>();
-            for(int i=0; i<strings1.length; i++){
-                for(int j=0; j< strings2.length; j++){
-                    if(strings1[i]==strings2[j]){
-                        intersection.add(strings1[i]);
+
+            // Finding intersection and union
+            for (String s1 : strings1) {
+                int countInStrings1 = countOccurrences(strings1, s1);
+                int countInStrings2 = countOccurrences(strings2, s1);
+                int minCount = Math.min(countInStrings1, countInStrings2);
+                for (int i = 0; i < minCount; i++) {
+                    intersection.add(s1);
+                }
+                int maxCount = Math.max(countInStrings1, countInStrings2);
+                for (int i = 0; i < maxCount; i++) {
+                    union.add(s1);
+                }
+            }
+
+            for (String s2 : strings2) {
+                if (!intersection.contains(s2)) {
+                    int countInStrings1 = countOccurrences(strings1, s2);
+                    int countInStrings2 = countOccurrences(strings2, s2);
+                    int minCount = Math.min(countInStrings1, countInStrings2);
+                    for (int i = 0; i < minCount; i++) {
+                        intersection.add(s2);
+                    }
+                    int maxCount = Math.max(countInStrings1, countInStrings2);
+                    for (int i = 0; i < maxCount; i++) {
+                        union.add(s2);
                     }
                 }
             }
-            List<String>union=new ArrayList<>(strings1);
-            union.addAll(strings2);
+            union_size=union.size();
+            intersection_size=intersection.size();
         }
-
-
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //                                      DATA INTEGRATION ASSIGNMENT                                           //
-        // Calculate the Jaccard similarity of the two String arrays. Note that the Jaccard similarity needs to be    //
-        // calculated differently depending on the token semantics: set semantics remove duplicates while bag         //
-        // semantics consider them during the calculation. The solution should be able to calculate the Jaccard       //
-        // similarity either of the two semantics by respecting the inner bagSemantics flag.                          //
-
-
-
-        //                                                                                                            //
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+        if(union_size==0){
+            jaccardSimilarity=0;}
+        else {
+            jaccardSimilarity = (double)intersection_size / union_size;
+        }
         return jaccardSimilarity;
     }
+
+    private int countOccurrences(String[] array, String element) {
+        int count = 0;
+        for (String s : array) {
+            if (s.equals(element)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                      DATA INTEGRATION ASSIGNMENT                                           //
+// Calculate the Jaccard similarity of the two String arrays. Note that the Jaccard similarity needs to be    //
+// calculated differently depending on the token semantics: set semantics remove duplicates while bag         //
+// semantics consider them during the calculation. The solution should be able to calculate the Jaccard       //
+// similarity either of the two semantics by respecting the inner bagSemantics flag.                          //
+//                                                                                                            //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
