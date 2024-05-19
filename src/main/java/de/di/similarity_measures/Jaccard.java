@@ -46,14 +46,12 @@ public class Jaccard implements SimilarityMeasure {
     @Override
 
         public double calculate(String[] strings1, String[] strings2) {
-            double jaccardSimilarity = 0;
-            Set<String> set_string1, set_string2;
-    //        int union_size = 0;
-    //        int intersection_size = 0;
+            double jaccardSimilarity;
 
             if (!bagSemantics) { //it means we have set semantics
                 int union_size = 0;
                 int intersection_size = 0;
+                Set<String> set_string1, set_string2;
                 set_string1 = new HashSet<>(Arrays.asList(strings1)); //create set so that no duplicates are there
                 set_string2 = new HashSet<>(Arrays.asList(strings2));
                 Set<String> intersection = new HashSet<>(set_string1); //calculate intersection
@@ -68,65 +66,37 @@ public class Jaccard implements SimilarityMeasure {
                     jaccardSimilarity = (double) intersection_size / union_size;
                 }
             }
-            else {//bag semantics
+           else {//bag semantics
+                Map<String, Integer> tokens1 = get_Tokens_Freq(strings1);
+                Map<String, Integer> tokens2 = get_Tokens_Freq(strings2);
 
-                if (strings1.length > 1 && strings2.length > 1) {
-                    int union_size;
-                    int intersection_size = 0;
-                    int[] count1 = countOccurrences(strings1);
-                    int[] count2 = countOccurrences(strings2);
-                    int maxSize = Math.max(count1.length, count2.length);
-                    count1 = Arrays.copyOf(count1, maxSize);
-                    count2 = Arrays.copyOf(count2, maxSize);
-                    for (int i = 0; i < count1.length; i++) {
-                        intersection_size += Math.min(count1[i], count2[i]);
-                    }
-                    List<String> union = new ArrayList<>();
-                    union.addAll(Arrays.asList(strings1));
-                    union.addAll(Arrays.asList(strings2));
-                    union_size = union.size();
-                    if (union_size == 0) {
-                        jaccardSimilarity = 0;
-                    } else {
-                        jaccardSimilarity = (double) intersection_size / union_size;
-                    }
+                int intersection_size = 0;
+                int union_size = 0;
+
+                for (String token : tokens1.keySet()) {
+                    intersection_size += Math.min(tokens1.get(token), tokens2.getOrDefault(token, 0)); //get intersection size
+                    union_size += tokens1.get(token); //get part of union size
                 }
 
-                else {
-                    int union_size = 0;
-                    int intersection_size = 0;
-                    Set<String> intersection = new HashSet<>(Arrays.asList(strings1)); //calculate intersection
-                    intersection.retainAll(Arrays.asList(strings2));
-                    intersection_size = intersection.size();
-                    List<String> union = new ArrayList<>();
-                    union.addAll(Arrays.asList(strings1));
-                    union.addAll(Arrays.asList(strings2));
-                    union_size = union.size();
-                    if (union_size == 0) {
-                        jaccardSimilarity = 0;
-                    } else {
-                        jaccardSimilarity = (double) intersection_size / union_size;
-                    }
+                for (String token : tokens2.keySet()) {
+                    union_size += tokens2.get(token); //complete union size with elements from second list
+                }
+
+                if (union_size == 0) {
+                    jaccardSimilarity = 0;
+                } else {
+                    jaccardSimilarity = (double) intersection_size / union_size;
                 }
             }
             return jaccardSimilarity;
         }
 
-    private int[] countOccurrences(String[] strings) {
-        // Find the maximum character value to determine the size of the count array
-        int maxChar = 0;
-        for (String str : strings) {
-            for (char c : str.toCharArray()) {
-                maxChar = Math.max(maxChar, c);
-            }
+    private Map<String, Integer> get_Tokens_Freq(String[] tokens) {
+        Map<String, Integer> freqMap = new HashMap<>();
+        for (String token : tokens) {
+            freqMap.put(token, freqMap.getOrDefault(token, 0) + 1);
         }
-        int[] count = new int[maxChar + 1]; // Adjust size based on maximum character value
-        for (String str : strings) {
-            for (char c : str.toCharArray()) {
-                count[c]++;
-            }
-        }
-        return count;
+        return freqMap;
     }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,5 +105,4 @@ public class Jaccard implements SimilarityMeasure {
 // calculated differently depending on the token semantics: set semantics remove duplicates while bag         //
 // semantics consider them during the calculation. The solution should be able to calculate the Jaccard       //
 // similarity either of the two semantics by respecting the inner bagSemantics flag.                          //
-//                                                                                                            //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
