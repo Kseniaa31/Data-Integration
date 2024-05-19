@@ -120,6 +120,7 @@ public class Levenshtein implements SimilarityMeasure {
                 upperLine = lowerLine;
                 lowerLine = temp;
             }
+
         }
         else {
             for (int i = 0; i <= strings1.length; i++) {
