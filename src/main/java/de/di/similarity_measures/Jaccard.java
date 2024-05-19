@@ -2,8 +2,6 @@ package de.di.similarity_measures;
 
 import de.di.similarity_measures.helper.Tokenizer;
 import lombok.AllArgsConstructor;
-
-import java.lang.reflect.Array;
 import java.util.*;
 
 @AllArgsConstructor
@@ -49,8 +47,8 @@ public class Jaccard implements SimilarityMeasure {
             double jaccardSimilarity;
 
             if (!bagSemantics) { //it means we have set semantics
-                int union_size = 0;
-                int intersection_size = 0;
+                int union_size;
+                int intersection_size;
                 Set<String> set_string1, set_string2;
                 set_string1 = new HashSet<>(Arrays.asList(strings1)); //create set so that no duplicates are there
                 set_string2 = new HashSet<>(Arrays.asList(strings2));
