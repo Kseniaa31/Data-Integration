@@ -3,6 +3,7 @@ package de.di.similarity_measures;
 import lombok.AllArgsConstructor;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 @AllArgsConstructor
 public class Levenshtein implements SimilarityMeasure {
@@ -23,27 +24,27 @@ public class Levenshtein implements SimilarityMeasure {
      */
     @Override
     public double calculate(final String string1, final String string2) {
-        double levenshteinSimilarity = 0;
-        int levenshteinDistance = 0;
+        double levenshteinSimilarity;
+        int levenshteinDistance;
 
-        int[] upperupperLine = new int[string1.length() + 1];   // line for Demarau lookups
+        int[] upperupperLine = new int[string1.length() + 1];   // line for Damerau lookups
         int[] upperLine = new int[string1.length() + 1];        // line for regular Levenshtein lookups
         int[] lowerLine = new int[string1.length() + 1];        // line to be filled next by the algorithm
 
         if (!withDamerau) {
-            // Fill the first line with the initial positions (= edits to generate string1 from nothing)
             for (int i = 0; i <= string1.length(); i++)
-                upperLine[i] = i;
+                upperLine[i] = i; //initialize first row of table (number of edits needed to transform an empty string to string1)
             for (int i = 1; i <= string2.length(); i++) {
-                lowerLine[0] = i;
+                lowerLine[0] = i; //initialize lowerLine for each row of table (number of edits needed to transform an empty string to string2)
                 for (int j = 1; j <= string1.length(); j++) {
-                    int cost = (string1.charAt(j - 1) == string2.charAt(i - 1)) ? 0 : 1;
+                    int cost = (string1.charAt(j - 1) == string2.charAt(i - 1)) ? 0 : 1; //if the characters at given position match --> cost=0, else--> cost=1
                     lowerLine[j] = Math.min(upperLine[j - 1] + cost, Math.min(upperLine[j] + 1, lowerLine[j - 1] + 1));
+                    //lowerLine value is the minimum of 3 operations (insertion, deletion, substitution)
                 }
-                // Swap the arrays for the next iteration
-                int[] temp = upperLine;
+                int[] c = upperLine;
                 upperLine = lowerLine;
-                lowerLine = temp;
+                lowerLine = c;
+                // Swap the arrays to use in the next iteration to avoid copying them
             }
         }
         else {
@@ -51,7 +52,6 @@ public class Levenshtein implements SimilarityMeasure {
                 upperupperLine[i] = i;
                 upperLine[i] = i;
             }
-            // Fill the matrix using dynamic programming
             for (int i = 0; i <= string1.length(); i++)
                 upperLine[i] = i;
             for (int i = 1; i <= string2.length(); i++) {
@@ -59,21 +59,21 @@ public class Levenshtein implements SimilarityMeasure {
                 for (int j = 1; j <= string1.length(); j++) {
                     int cost = (string1.charAt(j - 1) == string2.charAt(i - 1)) ? 0 : 1;
                     lowerLine[j] = Math.min(upperLine[j - 1] + cost, Math.min(upperLine[j] + 1, lowerLine[j - 1] + 1));
-                    // Damerau condition: check if transposition is less expensive than the best deletion and insertion
                     if (i > 1 && j > 1 && string1.charAt(j - 1) == string2.charAt(i - 2) && string1.charAt(j - 2) == string2.charAt(i - 1)) {
+                        //Damerau: check for the possibility of transposition
                         lowerLine[j] = Math.min(lowerLine[j], upperupperLine[j - 2] + cost);
+                        //check for the lowest cost considering the cost found before and the transposition
                     }
                 }
-                // Swap the arrays for the next iteration
-                int[] temp = upperupperLine;
+                int[] c = upperupperLine;
                 upperupperLine = upperLine;
                 upperLine = lowerLine;
-                lowerLine = temp;
+                lowerLine = c;
             }
         }
-        levenshteinDistance = upperLine[string1.length()];
+        levenshteinDistance = upperLine[string1.length()]; //the value found in the last column of the last row
 
-        if (string1.length() == 0 || string2.length() == 0) {
+        if (string1.isEmpty() || string2.isEmpty()) {
             levenshteinSimilarity = 0;
         } else {
             levenshteinSimilarity = 1.0 - (double) levenshteinDistance / Math.max(string1.length(), string2.length());
@@ -100,24 +100,22 @@ public class Levenshtein implements SimilarityMeasure {
      */
     @Override
     public double calculate(final String[] strings1, final String[] strings2) {
-        double levenshteinSimilarity = 0;
-        int levenshteinDistance = 0;
+        double levenshteinSimilarity;
+        int levenshteinDistance;
 
         int[] upperupperLine = new int[strings1.length + 1];   // line for Damerau lookups
         int[] upperLine = new int[strings1.length + 1];        // line for regular Levenshtein lookups
         int[] lowerLine = new int[strings1.length + 1];        // line to be filled next by the algorithm
 
-        // Fill the first line with the initial positions (= edits to generate string1 from nothing)
         if(!withDamerau) {
             for (int i = 0; i <= strings1.length; i++)
                 upperLine[i] = i;
             for (int i = 1; i <= strings2.length; i++) {
                 lowerLine[0] = i;
                 for (int j = 1; j <= strings1.length; j++) {
-                    int cost = (strings1[j - 1] == strings2[i - 1]) ? 0 : 1;
+                    int cost = (Objects.equals(strings1[j - 1], strings2[i - 1])) ? 0 : 1;
                     lowerLine[j] = Math.min(upperLine[j - 1] + cost, Math.min(upperLine[j] + 1, lowerLine[j - 1] + 1));
                 }
-                // Swap the arrays for the next iteration
                 int[] temp = upperLine;
                 upperLine = lowerLine;
                 lowerLine = temp;
@@ -128,7 +126,6 @@ public class Levenshtein implements SimilarityMeasure {
                 upperupperLine[i] = i;
                 upperLine[i] = i;
             }
-            // Fill the matrix using dynamic programming
             for (int i = 0; i <= strings1.length; i++)
                 upperLine[i] = i;
             for (int i = 1; i <= strings2.length; i++) {
@@ -136,12 +133,11 @@ public class Levenshtein implements SimilarityMeasure {
                 for (int j = 1; j <= strings1.length; j++) {
                     int cost = (strings1[j - 1].equals(strings2[i - 1])) ? 0 : 1;
                     lowerLine[j] = Math.min(upperLine[j - 1] + cost, Math.min(upperLine[j] + 1, lowerLine[j - 1] + 1));
-                    // Damerau condition: check if transposition is less expensive than the best deletion and insertion
+                    // Damerau extra condition
                     if (i > 1 && j > 1 && strings1[j - 1].equals(strings2[i - 2]) && strings1[j - 2].equals(strings2[i - 1])) {
                         lowerLine[j] = Math.min(lowerLine[j], upperupperLine[j - 2] + cost);
                     }
                 }
-                // Swap the arrays for the next iteration
                 int[] temp = upperupperLine;
                 upperupperLine = upperLine;
                 upperLine = lowerLine;
@@ -156,12 +152,11 @@ public class Levenshtein implements SimilarityMeasure {
                  }
                  return levenshteinSimilarity;
              }
-         }
+}
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //                                      DATA INTEGRATION ASSIGNMENT                                           //
         // Use the three provided lines to successively calculate the Levenshtein matrix with the dynamic programming //
         // algorithm. Depending on whether the inner flag withDamerau is set, the Damerau extension rule should be    //
         // used during calculation or not. Hint: Implement the Levenshtein algorithm above first, then copy the code  //
         // to this function and adjust it a bit to work on the arrays - the algorithm is the same.                    //
-        //                                                                                                            //
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
