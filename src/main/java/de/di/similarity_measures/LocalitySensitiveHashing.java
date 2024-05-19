@@ -42,8 +42,6 @@ public class LocalitySensitiveHashing implements SimilarityMeasure {
         String[] strings1 = this.tokenizer.tokenize(string1);
         String[] strings2 = this.tokenizer.tokenize(string2);
         return this.calculate(strings1, strings2);
-
-
     }
 
     /**
@@ -58,69 +56,82 @@ public class LocalitySensitiveHashing implements SimilarityMeasure {
      */
     @Override
     public double calculate(String[] strings1, String[] strings2) {
-        if (strings1 == null || strings2 == null) {
-            return Double.NaN; // Return NaN if any of the input arrays is null
-        }
-
-        double lshJaccard = 0;
+        double lshJaccard;
         String[] signature1 = new String[this.minHashFunctions.size()];
         String[] signature2 = new String[this.minHashFunctions.size()];
+        int numHashFunctions = minHashFunctions.size();
 
-        // Generate LSH signatures for strings1 and strings2
-        for (int i = 0; i < this.minHashFunctions.size(); i++) {
-//            signature1[i] = this.minHashFunctions.get(i).MinHash(strings1);
-//            signature2[i] = this.minHashFunctions.get(i).MinHash(strings2);
+        if (strings1.length == 1 && strings2.length == 1) {
+            strings1 = tokenizer.tokenize(strings1[0]);
+            strings2 = tokenizer.tokenize(strings2[0]);
         }
 
-        // Compute Jaccard similarity between signatures
-        lshJaccard = jaccardSimilarity(signature1, signature2);
+        // Generate signatures for strings1
+        for (int i = 0; i < numHashFunctions; i++) {
+            signature1[i] = minHashFunctions.get(i).hash(strings1);
+        }
 
+        // Generate signatures for strings2
+        for (int i = 0; i < numHashFunctions; i++) {
+            signature2[i] = minHashFunctions.get(i).hash(strings2);
+        }
+
+        if (bagSemantics) {
+            Map<String, Integer> sig1 = get_Tokens_Freq(signature1);
+            Map<String, Integer> sig2 = get_Tokens_Freq(signature2);
+
+            int intersection_size = 0;
+            int union_size = 0;
+
+            for (String token : sig1.keySet()) {
+                intersection_size += Math.min(sig1.get(token), sig2.getOrDefault(token, 0)); //get intersection size
+                union_size += sig1.get(token); //get part of union size
+            }
+
+            for (String token : sig2.keySet()) {
+                union_size += sig2.get(token); //complete union size with elements from second list
+            }
+
+            if (union_size == 0) {
+                lshJaccard = 0;
+            } else {
+                lshJaccard = (double) intersection_size / union_size;
+            }
+        }
+        else {
+            int intersection ;
+            int union;
+
+            // Set semantics: Use sets to calculate intersection and union
+            Set<String> set1 = new HashSet<>(Arrays.asList(signature1));
+            Set<String> set2 = new HashSet<>(Arrays.asList(signature2));
+
+            // Calculate intersection
+            Set<String> intersectionSet = new HashSet<>(set1);
+            intersectionSet.retainAll(set2);
+            intersection = intersectionSet.size();
+
+            // Calculate union
+            Set<String> unionSet = new HashSet<>(set1);
+            unionSet.addAll(set2);
+            union = unionSet.size();
+
+            // Calculate Jaccard similarity
+            lshJaccard = (double) intersection / union;
+        }
         return lshJaccard;
     }
 
-    // Compute Jaccard similarity between two sets represented as arrays of strings
-    private double jaccardSimilarity(String[] set1, String[] set2) {
-        Set<String> intersection = new HashSet<>();
-        Set<String> union = new HashSet<>();
-
-        // Add elements from set1 to union
-        for (String s : set1)
-            union.add(s);
-
-        // Add elements from set2 to union, and count intersection
-        for (String s : set2) {
-            if (!union.add(s)) // If already in union, it's an intersection
-                intersection.add(s);
+    private Map<String, Integer> get_Tokens_Freq(String[] tokens) {
+        Map<String, Integer> freqMap = new HashMap<>();
+        for (String token : tokens) {
+            freqMap.put(token, freqMap.getOrDefault(token, 0) + 1);
         }
-
-        // Calculate Jaccard similarity
-        double jaccardSimilarity;
-        if (bagSemantics) {
-            jaccardSimilarity = (double) intersection.size() / union.size();
-        } else {
-            int intersectionSize = intersection.size();
-            int unionSize = set1.length + set2.length - intersectionSize;
-            jaccardSimilarity = (double) intersectionSize / unionSize;
-        }
-        return jaccardSimilarity;
+        return freqMap;
     }
-
-    // Assume MinHash class exists with a minHash method
-    private static class MinHash {
-        private final int hashIndex; // Add a field to hold the hash index
-         public MinHash(int hashIndex) {
-            this.hashIndex = hashIndex; // Initialize the hash index
-        }
-        
-
-        // Rest of the class...
-    }
-
 }
-
 /////////////////////// /////////////////////////////////////////////////////////////////////////////////////////
-        //                                      DATA INTEGRATION ASSIGNMENT                                           //
-        // Calculate the two signatures by using the internal MinHash functions. Then, use the signatures to          //
-        // approximate the Jaccard similarity.                                                                        //
-        //                                                                                                            //
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                      DATA INTEGRATION ASSIGNMENT                                           //
+// Calculate the two signatures by using the internal MinHash functions. Then, use the signatures to          //
+// approximate the Jaccard similarity.                                                                        //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
