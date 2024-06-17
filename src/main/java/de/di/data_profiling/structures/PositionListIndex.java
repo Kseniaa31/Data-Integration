@@ -56,24 +56,36 @@ public class PositionListIndex {
     public PositionListIndex intersect(PositionListIndex other) {
         List<IntArrayList> clustersIntersection = this.intersect(this.clusters, other.getInvertedClusters());
         AttributeList attributesUnion = this.attributes.union(other.getAttributes());
-
         return new PositionListIndex(attributesUnion, clustersIntersection, this.relationLength());
     }
 
     private List<IntArrayList> intersect(List<IntArrayList> clusters, int[] invertedClusters) {
         List<IntArrayList> clustersIntersection = new ArrayList<>();
 
+        for (IntArrayList cluster : clusters) {
+            Map<Integer, IntArrayList> tempClusters = new HashMap<>();
+
+            for (int index : cluster) {
+                int index_cluster = invertedClusters[index];
+                if (index_cluster != -1) {
+                    tempClusters.putIfAbsent(index_cluster, new IntArrayList());
+                    tempClusters.get(index_cluster).add(index);
+                }
+            }
+
+            for (Map.Entry<Integer, IntArrayList> entry : tempClusters.entrySet()) {
+                if (entry.getValue().size() > 1) {
+                    clustersIntersection.add(entry.getValue());
+                }
+            }
+        }
+        return clustersIntersection;
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //                                      DATA INTEGRATION ASSIGNMENT                                           //
         // Calculate the intersection of one PLI's clusters and another PLI's (conveniently already inverted)         //
         // invertedClusters. The clustersIntersection is a new list that stores the intersection result. Note that    //
-        // the clusters are "Stripped Partitions", which means that only clusters of size >1 are part of the result.  //
-
-
-
+        // the clusters are "Stripped Partitions", which means that only clusters of size >1 are part of the result.  /
         //                                                                                                            //
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        return clustersIntersection;
     }
 }
