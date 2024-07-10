@@ -5,6 +5,7 @@ import de.di.duplicate_detection.structures.AttrSimWeight;
 import de.di.duplicate_detection.structures.Duplicate;
 import de.di.similarity_measures.Jaccard;
 import de.di.similarity_measures.Levenshtein;
+import de.di.similarity_measures.SimilarityMeasure;
 import de.di.similarity_measures.helper.Tokenizer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -49,12 +50,24 @@ public class SortedNeighborhood {
         // Discover all duplicates in the provided relation. A duplicate stores the attribute indexes that refer to   //
         // matching records. Use the provided sortingKeys, windowSize, and recordComparator to implement the Sorted   //
         // Neighborhood Method correctly.                                                                             //
-
-
-
         //                                                                                                            //
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        for (int key : sortingKeys) {
+            Arrays.sort(records, Comparator.comparing(r -> r.getValues()[key]));
+            for (int i = 0; i < records.length; i++) {
+                Record current = records[i];
+                for (int j = i + 1; j < Math.min(i + windowSize, records.length); j++) {
+                    Record record = records[j];
+                    double similarity = recordComparator.compare(current.getValues(), record.getValues());
+                    if (recordComparator.isDuplicate(similarity)) {
+                        int index1 = Math.min(current.getIndex(), record.getIndex());
+                        int index2 = Math.max(current.getIndex(), record.getIndex());
+                        duplicates.add(new Duplicate(index1, index2, similarity, relation));
+                    }
+                }
+            }
+        }
         return duplicates;
     }
 
@@ -65,7 +78,7 @@ public class SortedNeighborhood {
      */
     public static RecordComparator suggestRecordComparatorFor(Relation relation) {
         List<AttrSimWeight> attrSimWeights = new ArrayList<>(relation.getAttributes().length);
-        double threshold = 0.0;
+        double threshold = 0.7;
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //                                      DATA INTEGRATION ASSIGNMENT                                           //
@@ -75,12 +88,27 @@ public class SortedNeighborhood {
         // implemented similarity functions for duplicate detections runs on the provided relation. Side note: This   //
         // is usually learned by machine learning algorithms, but a creative, heuristics-based solution is sufficient //
         // here.                                                                                                      //
-
-
-
         //                                                                                                            //
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        for (int index = 0; index < relation.getAttributes().length; index++) {
+            SimilarityMeasure similarity;
+            double weight = 0.1;
+
+            String attributeName = relation.getAttributes()[index];
+            if (attributeName.equalsIgnoreCase("name") || attributeName.equalsIgnoreCase("title")) {
+                similarity = new Levenshtein(true);
+                weight = 0.2;
+            }
+            else if (attributeName.equalsIgnoreCase("description") || attributeName.equalsIgnoreCase("content")) {
+                similarity = new Jaccard(new Tokenizer(3, true), false);
+                weight = 0.3;
+            }
+            else {
+                similarity = new Levenshtein(true);
+            }
+            attrSimWeights.add(new AttrSimWeight(index, similarity, weight));
+        }
         return new RecordComparator(attrSimWeights, threshold);
     }
 }

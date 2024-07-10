@@ -29,12 +29,32 @@ public class TransitiveClosure {
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //                                      DATA INTEGRATION ASSIGNMENT                                           //
         // Calculate the transitive closure over the provided attributes using Warshall's (or Warren's) algorithm.    //
-
-
-
         //                                                                                                            //
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        boolean[][] transitive_matrix = new boolean[numRecords][numRecords];
+        for (Duplicate duplicate : duplicates) {
+            int record1 = duplicate.getIndex1();
+            int record2 = duplicate.getIndex2();
+            transitive_matrix[record1][record2] = true;
+            transitive_matrix[record2][record1] = true;
+        }
+        for (int k = 0; k < numRecords; k++) {   // Warshall's algorithm
+            for (int i = 0; i < numRecords; i++) {
+                for (int j = 0; j < numRecords; j++) {
+                    if (transitive_matrix[i][k] && transitive_matrix[k][j]) {
+                        transitive_matrix[i][j] = true;
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < numRecords; i++) {
+            for (int j = i + 1; j < numRecords; j++) {
+                if (transitive_matrix[i][j]) {
+                    closedDuplicates.add(new Duplicate(i, j, 1.0, relation)); // Assuming similarity as 1.0
+                }
+            }
+        }
         return closedDuplicates;
     }
 }
