@@ -98,11 +98,11 @@ public class SortedNeighborhood {
             String attributeName = relation.getAttributes()[index];
             if (attributeName.equalsIgnoreCase("name") || attributeName.equalsIgnoreCase("title")) {
                 similarity = new Levenshtein(true);
-                weight = 0.2;
+                weight = 0.3;
             }
             else if (attributeName.equalsIgnoreCase("description") || attributeName.equalsIgnoreCase("content")) {
                 similarity = new Jaccard(new Tokenizer(3, true), false);
-                weight = 0.3;
+                weight = 0.5;
             }
             else {
                 similarity = new Levenshtein(true);
